@@ -1,4 +1,6 @@
 run-control-plane:
 	go run main.go
 run-envoy:
-	envoy -c github.com/ishankhare07/envoy-dynamic-control-plane.yaml -l debug
+	envoy -c envoy-dynamic-control-plane.yaml -l debug
+start-grpcui:
+	grpcui --plaintext localhost:18000

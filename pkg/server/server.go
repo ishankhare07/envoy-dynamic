@@ -16,8 +16,10 @@ import (
 	secretservice "github.com/envoyproxy/go-control-plane/envoy/service/secret/v3"
 
 	helloworldservice "github.com/ishankhare07/envoy-dynamic/pkg/helloworld"
+
+	generator "github.com/ishankhare07/envoy-dynamic/pkg/snapshot"
+
 	"github.com/ishankhare07/envoy-dynamic/pkg/logger"
-	"github.com/ishankhare07/envoy-dynamic/pkg/snapshot"
 
 	"github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/server/v3"
@@ -42,7 +44,7 @@ func registerServer(grpcServer *grpc.Server, server server.Server) {
 	listenerservice.RegisterListenerDiscoveryServiceServer(grpcServer, server)
 	secretservice.RegisterSecretDiscoveryServiceServer(grpcServer, server)
 	runtimeservice.RegisterRuntimeDiscoveryServiceServer(grpcServer, server)
-	helloworldservice.RegisterGreeterServer(grpcServer, &helloworldservice.HelloWorldServer{})
+	// helloworldservice.RegisterGreeterServer(grpcServer, &helloworldservice.HelloWorldServer{})
 }
 
 func RunServer(ctx context.Context, port uint) {
@@ -55,7 +57,7 @@ func RunServer(ctx context.Context, port uint) {
 
 	snapshotCache = cache.NewSnapshotCache(false, cache.IDHash{}, log)
 
-	snapshot := snapshot.GenerateSnapshot("listener_0", "local_route", "example_cluster", "www.envoyproxy.io", 10000, 80)
+	snapshot := generator.GenerateSnapshot("listener_0", "local_route", "example_cluster", "www.envoyproxy.io", 10000, 80)
 	if err := snapshot.Consistent(); err != nil {
 		log.Errorf("snapshot inconsistency: %+v\n%+v", snapshot, err)
 		os.Exit(1)
@@ -74,6 +76,7 @@ func RunServer(ctx context.Context, port uint) {
 	srv := server.NewServer(ctx, snapshotCache, cb)
 
 	registerServer(grpcServer, srv)
+	helloworldservice.RegisterGreeterServer(grpcServer, helloworldservice.NewHelloWorldServer(snapshotCache))
 	reflection.Register(grpcServer)
 
 	log.Infof("management server listening on port %d\n", port)
